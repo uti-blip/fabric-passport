@@ -1,57 +1,78 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { fetchProducts, createProduct } from "@/lib/api";
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState([
-    { id: "1", name: "Organic Cotton Tee", sku: "TSH-ORG-01", description: "100% organic cotton" },
-    { id: "2", name: "Recycled Denim Jacket", sku: "JAC-REC-02", description: "Vintage wash recycled denim" },
-  ])
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [name, setName] = useState("");
+  const [sku, setSku] = useState("");
+  const [brandId, setBrandId] = useState("");
+
+  async function load() {
+    setLoading(true);
+    try {
+      const data = await fetchProducts();
+      setProducts(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name || !brandId) return;
+    await createProduct({ name, sku, brand_id: brandId });
+    setName(""); setSku(""); setBrandId("");
+    load();
+  }
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight">Products</h2>
-        <Button>Add New Product</Button>
-      </div>
+      <h2 className="text-3xl font-serif font-bold tracking-tight">Products</h2>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Product Catalog</CardTitle>
-          <CardDescription>Manage your products and their compliance requirements.</CardDescription>
-        </CardHeader>
+      <Card className="glass border-border/50">
+        <CardHeader><CardTitle className="text-lg">Add Product</CardTitle></CardHeader>
         <CardContent>
-          <div className="mb-4">
-            <Input placeholder="Search products by SKU or name..." className="max-w-sm" />
-          </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>SKU</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {products.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell className="font-medium">{product.sku}</TableCell>
-                  <TableCell>{product.name}</TableCell>
-                  <TableCell className="text-muted-foreground truncate max-w-xs">{product.description}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">Edit</Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <form onSubmit={handleCreate} className="flex gap-3">
+            <Input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
+            <Input placeholder="SKU" value={sku} onChange={(e) => setSku(e.target.value)} />
+            <Input placeholder="Brand ID" value={brandId} onChange={(e) => setBrandId(e.target.value)} required />
+            <Button type="submit">Add</Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="glass border-border/50">
+        <CardContent className="pt-6">
+          {loading ? <p className="text-muted-foreground">Loading...</p> :
+           products.length === 0 ? <p className="text-muted-foreground">No products yet.</p> : (
+            <Table>
+              <TableHeader>
+                <TableRow><TableHead>SKU</TableHead><TableHead>Name</TableHead><TableHead>Created</TableHead></TableRow>
+              </TableHeader>
+              <TableBody>
+                {products.map((p: any) => (
+                  <TableRow key={p.id}>
+                    <TableCell className="font-medium">{p.sku || "—"}</TableCell>
+                    <TableCell>{p.name}</TableCell>
+                    <TableCell>{new Date(p.created_at).toLocaleDateString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
