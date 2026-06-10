@@ -1,64 +1,136 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { fetchDPPPublic } from "@/lib/api";
+
+function Skeleton({ className }: { className?: string }) {
+  return <div className={`skeleton ${className || ""}`} />;
+}
 
 export default function PublicDPPPage({ params }: { params: { id: string } }) {
-  // Mock data for the consumer view
-  const data = {
-    product: "Organic Cotton Tee",
-    brand: "EcoFashion Co.",
-    material: "100% GOTS Certified Organic Cotton",
-    carbon: "2.4 kg CO2e",
-    water: "150 Liters",
-    madeIn: "Vietnam",
+  const [dpp, setDpp] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (params.id === "demo") {
+      setDpp({
+        id: "demo",
+        material_composition: "100% GOTS Certified Organic Cotton — Source: Tamil Nadu, India",
+        carbon_footprint_kg: 2.4,
+        water_usage_liters: 150,
+        status: "compliant",
+        product_id: "demo-1",
+        supplier_id: "demo-s1",
+        created_at: new Date().toISOString(),
+        product_name: "Classic Organic Tee",
+        brand_name: "EcoFashion Co.",
+      });
+      setLoading(false);
+      return;
+    }
+    fetchDPPPublic(params.id)
+      .then(setDpp)
+      .catch(() => setDpp(null))
+      .finally(() => setLoading(false));
+  }, [params.id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="space-y-4 text-center">
+          <Skeleton className="h-8 w-48 mx-auto" />
+          <Skeleton className="h-4 w-64 mx-auto" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!dpp) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <span className="text-6xl">◆</span>
+          <h1 className="text-2xl font-serif font-bold">Passport not found</h1>
+          <p className="text-muted-foreground">This DPP does not exist or has been removed.</p>
+          <Link href="/" className="text-primary hover:underline text-sm">
+            ← Back to Fabric Passport
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8 dark:bg-zinc-950">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Digital Product Passport</h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Verified by Fabric Passport
-          </p>
+    <div className="min-h-screen bg-background">
+      {/* Top bar */}
+      <div className="glass border-b border-border/30">
+        <div className="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between">
+          <span className="text-sm font-serif font-bold luxury-gradient">Fabric Passport</span>
+          <span className="text-xs text-muted-foreground">
+            EU Digital Product Passport
+          </span>
+        </div>
+      </div>
+
+      <div className="max-w-3xl mx-auto px-6 py-12 space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-4 py-1.5 text-xs text-emerald-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            Verified DPP
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-serif font-bold">
+            {dpp.product_name || "Product Passport"}
+          </h1>
+          <p className="text-muted-foreground">{dpp.brand_name || "Brand"}</p>
         </div>
 
-        <Card className="shadow-lg border-t-4 border-t-green-500">
-          <CardHeader className="text-center pb-2">
-            <CardTitle className="text-2xl">{data.product}</CardTitle>
-            <p className="text-muted-foreground font-medium">by {data.brand}</p>
-          </CardHeader>
-          <CardContent className="space-y-6 pt-4">
-            
-            <div className="border-l-4 border-blue-500 pl-4 py-1">
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Material Composition</h3>
-              <p className="mt-1 text-lg font-medium">{data.material}</p>
+        {/* QR placeholder + key metrics */}
+        <div className="grid sm:grid-cols-3 gap-4">
+          <div className="glass luxury-border rounded-2xl p-6 text-center">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Carbon</p>
+            <p className="text-2xl font-serif font-bold">{dpp.carbon_footprint_kg} <span className="text-sm font-sans font-normal text-muted-foreground">kg CO₂e</span></p>
+          </div>
+          <div className="glass luxury-border rounded-2xl p-6 text-center">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Water</p>
+            <p className="text-2xl font-serif font-bold">{dpp.water_usage_liters} <span className="text-sm font-sans font-normal text-muted-foreground">liters</span></p>
+          </div>
+          <div className="glass luxury-border rounded-2xl p-6 text-center flex flex-col items-center justify-center">
+            <div className="w-16 h-16 bg-white rounded-xl mb-2 flex items-center justify-center">
+              <span className="text-xs text-black font-mono">QR</span>
             </div>
+            <p className="text-xs text-muted-foreground">Scan for details</p>
+          </div>
+        </div>
 
-            <div className="border-l-4 border-green-500 pl-4 py-1">
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Environmental Impact</h3>
-              <div className="mt-2 grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground">Carbon Footprint</p>
-                  <p className="font-semibold">{data.carbon}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Water Usage</p>
-                  <p className="font-semibold">{data.water}</p>
-                </div>
-              </div>
-            </div>
+        {/* Material composition */}
+        <div className="glass luxury-border rounded-2xl p-8">
+          <h3 className="text-sm text-muted-foreground uppercase tracking-wider mb-4">Material Composition</h3>
+          <p className="text-lg leading-relaxed">{dpp.material_composition || "Not specified"}</p>
+        </div>
 
-            <div className="border-l-4 border-purple-500 pl-4 py-1">
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Origin</h3>
-              <p className="mt-1 text-lg font-medium">Made in {data.madeIn}</p>
-            </div>
+        {/* Footer info */}
+        <div className="grid sm:grid-cols-2 gap-4 text-sm text-muted-foreground">
+          <div className="glass rounded-xl p-4">
+            <span className="text-xs uppercase tracking-wider block mb-1">Passport ID</span>
+            <code className="text-xs font-mono text-foreground/70">{dpp.id}</code>
+          </div>
+          <div className="glass rounded-xl p-4">
+            <span className="text-xs uppercase tracking-wider block mb-1">Created</span>
+            <span>{new Date(dpp.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</span>
+          </div>
+        </div>
 
-          </CardContent>
-        </Card>
-
-        <p className="text-center text-xs text-muted-foreground">
-          This passport complies with EU DPP regulations for textiles.
-        </p>
+        <div className="text-center pt-8">
+          <Link
+            href="/"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Powered by Fabric Passport — EU AI Act compliant
+          </Link>
+        </div>
       </div>
     </div>
-  )
+  );
 }
