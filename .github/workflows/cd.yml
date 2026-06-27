@@ -1,0 +1,56 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci-gate:
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  deploy-backend:
+    needs: ci-gate
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Railway
+        run: |
+          curl -s -X POST "https://backboard.railway.app/graphql/v2" \
+            -H "Authorization: Bearer ${{ secrets.RAILWAY_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"query": "mutation { serviceInstanceDeploy(commitSha: \"'"$GITHUB_SHA"'\", environmentId: \"311f4b22-008d-4cb3-b27a-7af7bf61dc92\", serviceId: \"df698d01-8298-485a-ab6a-b50f4dbb5157\") }"}'
+
+  deploy-frontend:
+    needs: ci-gate
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ./app/package-lock.json
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: ./app/dist
+          production-deploy: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
