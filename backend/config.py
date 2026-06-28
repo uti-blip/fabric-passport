@@ -14,7 +14,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 1 week
 
 # ── CORS ──────────────────────────────────────────────
 ALLOWED_ORIGINS = os.getenv(
-    "ALLOWED_ORIGINS", "http://localhost:3000"
+    "ALLOWED_ORIGINS",
+    "http://localhost:3000,https://fabric-passport.vercel.app",
 ).split(",")
 
 # ── App ───────────────────────────────────────────────

@@ -23,9 +23,10 @@ jobs:
         with:
           filters: |
             backend:
-              - 'lexia-backend/**'
+              - 'backend/**'
               - '.github/workflows/ci.yml'
             frontend:
+              - 'frontend/**'
               - 'app/**'
               - '.github/workflows/ci.yml'
 
@@ -35,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./lexia-backend
+        working-directory: ./backend
     steps:
       - uses: actions/checkout@v4
 
@@ -53,22 +54,22 @@ jobs:
       - name: Lint with ruff
         run: |
           pip install ruff
-          ruff check app/ --output-format=github || true
-          ruff format --check app/ || true
+          ruff check . --output-format=github || true
+          ruff format --check . || true
 
       - name: Type check with mypy
         run: |
           pip install mypy
-          mypy app/ --ignore-missing-imports || true
+          mypy . --ignore-missing-imports || true
 
       - name: Run tests
-        run: pytest --tb=short -q || echo "No tests yet — add tests in lexia-backend/tests/"
+        run: pytest --tb=short -q || echo "No tests yet — add tests in backend/tests/"
 
       - name: Smoke test (import app)
         env:
           JWT_SECRET_KEY: ci-test-key-${{ github.run_id }}-${{ github.run_attempt }}-padding-to-32-chars
           DEBUG: "true"
-        run: python -c "from app.main import app; print('App imports OK')"
+        run: python -c "from main import app; print('App imports OK')"
 
   frontend-test:
     needs: changes
@@ -76,7 +77,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./app
+        working-directory: ./frontend
     steps:
       - uses: actions/checkout@v4
 
@@ -85,7 +86,6 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: ./app/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -115,11 +115,11 @@ jobs:
       - name: Dependency vulnerability scan (backend)
         run: |
           pip install pip-audit
-          cd lexia-backend
+          cd backend
           pip-audit -r requirements.txt
 
       - name: Dependency vulnerability scan (frontend)
         run: |
           npm install -g better-npm-audit
-          cd app
+          cd frontend
           better-npm-audit audit
