@@ -1,6 +1,7 @@
 # Fabric Passport
 
-EU AI Act compliance platform — supplier traceability, DPP (Digital Product Passport), audit trails.
+Digital Product Passport (DPP) platform for textile/fashion supply-chain traceability —
+supplier onboarding, DPP generation, audit trails, and EU ESPR compliance readiness.
 
 ## Stack
 
